@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>健身記錄</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top-nav">
+    <h1>健身記錄</h1>
+    <nav>
+      <a href="index.html">今日</a>
+      <a href="history.html">歷史</a>
+      <a href="admin.html">設定</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div id="draft-banner" class="banner banner-warn hidden">
+      <strong>你有未完成的訓練</strong>
+      <div class="dim" id="draft-banner-detail"></div>
+      <div class="spacer"></div>
+      <div class="btn-row">
+        <a class="btn btn-primary btn-sm" href="session.html">繼續訓練</a>
+        <button class="btn btn-ghost btn-sm" id="draft-discard">丟棄草稿</button>
+      </div>
+    </div>
+
+    <div id="suggestion" class="banner">載入建議中…</div>
+
+    <h2>今天要練哪一種?</h2>
+    <div class="day-type-grid">
+      <button class="day-btn" data-type="push_legs">
+        推 + 腿
+        <span class="sub">胸、肩、三頭 + 腿</span>
+      </button>
+      <button class="day-btn" data-type="pull_legs">
+        拉 + 腿
+        <span class="sub">背、二頭 + 腿</span>
+      </button>
+      <button class="day-btn" data-type="core">
+        核心 abs
+        <span class="sub">腹、下背</span>
+      </button>
+    </div>
+
+    <div class="spacer"></div>
+    <p class="dim">選擇後會進入該日菜單。可自由 override 今日建議。</p>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/mock-data.js"></script>
+  <script src="js/plan.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/draft.js"></script>
+  <script src="js/app-index.js"></script>
+</body>
+</html>

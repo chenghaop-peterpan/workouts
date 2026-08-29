@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>設定 · 健身記錄</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top-nav">
+    <h1>設定</h1>
+    <nav>
+      <a href="index.html">← 首頁</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <h2>API Token</h2>
+      <p class="dim">連線到 Apps Script 後端時需要 token,對應 Google Sheet <code>Config</code> 表的 <code>api_token</code> 值。</p>
+      <label>Token</label>
+      <input type="text" id="token-input" placeholder="貼上你的 token">
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-block" id="save-token">儲存</button>
+    </div>
+
+    <div class="card">
+      <h2>目前模式</h2>
+      <p id="mode-display" class="dim">—</p>
+      <p class="dim">切換 mock/real:編輯 <code>js/config.js</code> 的 <code>USE_MOCK</code> 與 <code>WEB_APP_URL</code>。</p>
+    </div>
+
+    <div class="card">
+      <h2>草稿</h2>
+      <p class="dim" id="draft-info">—</p>
+      <button class="btn btn-danger btn-sm" id="clear-draft">清除草稿</button>
+    </div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/draft.js"></script>
+  <script>
+    (function () {
+      const input = document.getElementById('token-input');
+      input.value = localStorage.getItem('api_token') || '';
+      document.getElementById('save-token').onclick = () => {
+        localStorage.setItem('api_token', input.value.trim());
+        const t = document.getElementById('toast');
+        t.textContent = '已儲存';
+        t.className = 'toast show success';
+        setTimeout(() => t.className = 'toast', 1500);
+      };
+
+      document.getElementById('mode-display').textContent =
+        window.APP_CONFIG.USE_MOCK ? 'Mock (本地假資料)' : `Real → ${window.APP_CONFIG.WEB_APP_URL || '(未設定 URL)'}`;
+
+      const d = Draft.load();
+      document.getElementById('draft-info').textContent = d
+        ? `${d.session.date} · ${d.session.type} · ${d.items.length} 項動作 · 更新於 ${new Date(d.updated_at).toLocaleString('zh-TW')}`
+        : '無草稿';
+      document.getElementById('clear-draft').onclick = () => {
+        if (confirm('確定清除草稿?')) {
+          Draft.clear();
+          location.reload();
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>訓練中 · 健身記錄</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top-nav">
+    <h1 id="session-title">訓練中</h1>
+    <nav>
+      <a href="index.html">← 回首頁</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title" id="session-meta-title">—</div>
+          <div class="dim" id="session-meta-sub">—</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:end;">
+        <div style="flex:1">
+          <label>體重 (kg)</label>
+          <input type="number" inputmode="decimal" id="body-weight" step="0.1" placeholder="選填">
+        </div>
+        <div style="flex:2">
+          <label>整場備註</label>
+          <input type="text" id="session-notes" placeholder="選填,如「肩膀有點痠」">
+        </div>
+      </div>
+    </div>
+
+    <div id="items-container"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-block" id="add-custom">+ 自訂動作</button>
+    </div>
+    <div class="spacer"></div>
+  </main>
+
+  <div id="rest-timer" class="rest-timer hidden">
+    <div class="timer-body">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-label" id="timer-label">組間休息</div>
+    </div>
+    <div class="timer-actions">
+      <button class="btn btn-sm" data-adjust="-15">-15s</button>
+      <button class="btn btn-sm" data-adjust="15">+15s</button>
+      <button class="btn btn-sm btn-ghost" data-action="skip">跳過</button>
+    </div>
+  </div>
+
+  <div class="bottom-bar container">
+    <button class="btn btn-ghost" id="discard-btn">丟棄</button>
+    <button class="btn btn-primary" id="submit-btn">完成訓練 → 送出</button>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/mock-data.js"></script>
+  <script src="js/plan.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/draft.js"></script>
+  <script src="js/app-session.js"></script>
+</body>
+</html>
