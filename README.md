@@ -2,8 +2,17 @@
 
 零成本 stack:**GitHub Pages 前端 + Apps Script 後端 + Google Sheets 當 DB**。
 
-- **Live demo**: https://chenghaop-peterpan.github.io/workouts/
+- **Live 網站**: https://chenghaop-peterpan.github.io/workouts/
 - **Repo**: https://github.com/chenghaop-peterpan/workouts
+
+### 快速連結
+
+| 頁面 | 網址 |
+|---|---|
+| 🏠 首頁(選日子 + 今日建議) | https://chenghaop-peterpan.github.io/workouts/ |
+| 💪 訓練中(有草稿時) | https://chenghaop-peterpan.github.io/workouts/session.html |
+| 📜 歷史紀錄 | https://chenghaop-peterpan.github.io/workouts/history.html |
+| ⚙️ 設定(token / 清草稿) | https://chenghaop-peterpan.github.io/workouts/admin.html |
 
 ## 快速開始 (mock 模式)
 
