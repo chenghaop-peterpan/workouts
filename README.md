@@ -28,7 +28,7 @@ python -m http.server 8000
 ## 流程
 
 1. **index.html** — 今日建議(推/拉輪替 + 每 3 天核心)+ 三顆日子按鈕
-2. **session.html** — 依日子類型載入預設菜單。每組:kg / reps / RPE、可 ✓ 完成觸發休息計時器、📝 加備註、⭐ PR 標記、⚠ 爆增預警
+2. **session.html** — 依日子類型載入預設菜單。每組:kg / reps / RIR / 休息秒、✓ 完成、📝 加備註、⭐ PR 標記、⚠ 爆增預警
 3. 完成訓練 → 一次性 POST → 清 localStorage 草稿 → 跳歷史頁
 4. **history.html** — 展開/收起檢視每場訓練
 5. **admin.html** — 設定 API token、切換模式、清草稿
@@ -43,7 +43,7 @@ workouts/
 ├── admin.html          token / 草稿管理
 ├── css/style.css       手機優先 UI
 ├── js/
-│   ├── config.js       WEB_APP_URL、USE_MOCK、休息秒數、預警閾值
+│   ├── config.js       WEB_APP_URL、USE_MOCK、預警閾值
 │   ├── mock-data.js    Prototype 假資料(含 4 場真實歷史)
 │   ├── api.js          唯一 IO 層 (mock / real 兩實作)
 │   ├── plan.js         今日建議演算法
@@ -98,7 +98,6 @@ window.APP_CONFIG = {
   WEB_APP_URL: '你剛拿到的 Web app URL',
   USE_MOCK: false,
   CORE_INTERVAL_DAYS: 3,
-  DEFAULT_REST_SEC: 120,
   WEIGHT_JUMP_RATIO: 1.25,
 };
 ```
@@ -123,7 +122,7 @@ git push
 - **加動作**:改 Sheet 的 `Exercises` 表加一列
 - **改教練提醒 / target 強度 / 影片連結**:改 Exercises 表對應欄位
 - **重跑 initSheet**:安全(Config、Sessions、SetLogs 不動),但會覆蓋 Exercises / Templates
-- **改休息秒數 / 預警閾值**:改 `js/config.js` 的 `DEFAULT_REST_SEC` / `WEIGHT_JUMP_RATIO`,推 code
+- **改預警閾值**:改 `js/config.js` 的 `WEIGHT_JUMP_RATIO`,推 code
 
 ## 除錯
 

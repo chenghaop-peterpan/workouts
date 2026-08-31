@@ -8,34 +8,38 @@
 
   const cfg = window.APP_CONFIG;
 
+  // === Header meta (draft 就有,不用等 API) ===
+  document.getElementById('session-meta-title').textContent =
+    typeLabel(draft.session.type) + (draft.session.includes_core ? ' (含核心)' : '');
+  document.getElementById('session-meta-sub').textContent =
+    `${draft.session.date} · 開始於 ${new Date(draft.started_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
+  document.getElementById('body-weight').value = draft.session.body_weight ?? '';
+  document.getElementById('session-notes').value = draft.session.notes ?? '';
+  document.getElementById('body-weight').addEventListener('input', (e) => {
+    draft.session.body_weight = e.target.value ? Number(e.target.value) : null;
+    Draft.save(draft);
+  });
+  document.getElementById('session-notes').addEventListener('input', (e) => {
+    draft.session.notes = e.target.value;
+    Draft.save(draft);
+  });
+
+  // === 資料層(SWR) ===
+  // allExercises / byId / prMap / lastMaxWeight 都會被 SWR fresh 覆寫,
+  // renderItems 讀的是當下值,fresh 到後 re-render 就會反映新資料。
   let allExercises = [];
-  try { allExercises = await API.getExercises(); }
-  catch (e) { toast('讀取動作字典失敗:' + e.message, 'error'); }
-  const byId = Object.fromEntries(allExercises.map(e => [e.exercise_id, e]));
+  const byId = {};
+  const prMap = {};
+  const lastMaxWeight = {};
 
-  // 第一次進來:根據 draft.session.type + includes_core 載入菜單
-  if (draft.items.length === 0) {
-    try {
-      const items = [];
-      const mainMenu = await API.getMenu(draft.session.type);
-      for (const m of mainMenu) items.push(menuItemToDraftItem(m));
-
-      if (draft.session.includes_core && draft.session.type !== 'core') {
-        const coreMenu = await API.getMenu('core');
-        for (const m of coreMenu) items.push(menuItemToDraftItem(m));
-      }
-      draft.items = items;
-      Draft.save(draft);
-    } catch (e) {
-      toast('讀取菜單失敗:' + e.message, 'error');
-    }
+  function rebuildById() {
+    for (const key in byId) delete byId[key];
+    for (const e of allExercises) byId[e.exercise_id] = e;
   }
 
-  // 從歷史算 PR + 記住每個動作的上次工作重量(給預警用)
-  const prMap = {};         // { exercise_id: { max_weight, max_reps } }
-  const lastMaxWeight = {}; // { exercise_id: number }  上一場該動作的最大重量
-  try {
-    const recent = await API.getRecentSessions(100);
+  function rebuildPRAndLastMax(recent) {
+    for (const key in prMap) delete prMap[key];
+    for (const key in lastMaxWeight) delete lastMaxWeight[key];
     const sorted = [...recent].sort((a, b) => (a.date < b.date ? 1 : -1));
     for (const s of sorted) {
       for (const st of s.sets) {
@@ -55,44 +59,88 @@
         lastMaxWeight[id] = Math.max(...inSession.map(x => Number(x.weight) || 0));
       }
     }
-  } catch { /* silent */ }
+  }
 
-  // Header meta
-  document.getElementById('session-meta-title').textContent =
-    typeLabel(draft.session.type) + (draft.session.includes_core ? ' (含核心)' : '');
-  document.getElementById('session-meta-sub').textContent =
-    `${draft.session.date} · 開始於 ${new Date(draft.started_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
-
-  document.getElementById('body-weight').value = draft.session.body_weight ?? '';
-  document.getElementById('session-notes').value = draft.session.notes ?? '';
-
-  document.getElementById('body-weight').addEventListener('input', (e) => {
-    draft.session.body_weight = e.target.value ? Number(e.target.value) : null;
-    Draft.save(draft);
-  });
-  document.getElementById('session-notes').addEventListener('input', (e) => {
-    draft.session.notes = e.target.value;
-    Draft.save(draft);
+  // Exercises SWR
+  const exSWR = Cache.swr('exercises', () => API.getExercises());
+  if (exSWR.cached) { allExercises = exSWR.cached; rebuildById(); }
+  exSWR.promise.then((fresh) => {
+    if (JSON.stringify(fresh) === JSON.stringify(allExercises)) return;
+    allExercises = fresh;
+    rebuildById();
+    if (draft.items.length > 0) renderItems();
+  }).catch((e) => {
+    if (!exSWR.cached) toast('讀取動作字典失敗:' + e.message, 'error');
   });
 
-  renderItems();
+  // Recent SWR (供 PR + 爆增預警)
+  const recentSWR = Cache.swr('recent:100', () => API.getRecentSessions(100));
+  if (recentSWR.cached) rebuildPRAndLastMax(recentSWR.cached);
+  recentSWR.promise.then((fresh) => {
+    if (JSON.stringify(fresh) === JSON.stringify(recentSWR.cached)) return;
+    rebuildPRAndLastMax(fresh);
+    if (draft.items.length > 0) renderItems();
+  }).catch(() => { /* silent */ });
+
+  // === Menu / draft.items 初始化 ===
+  if (draft.items.length > 0) {
+    // 已有 draft.items:立刻 render(即使 byId/prMap 還空,fresh 到會 re-render)
+    renderItems();
+  } else {
+    const type = draft.session.type;
+    const wantCore = draft.session.includes_core && type !== 'core';
+    const mainSWR = Cache.swr('menu:' + type, () => API.getMenu(type));
+    const coreSWR = wantCore ? Cache.swr('menu:core', () => API.getMenu('core')) : null;
+
+    if (mainSWR.cached && (!wantCore || coreSWR.cached)) {
+      // Cache 齊全:立刻用 cache 建 draft.items
+      draft.items = buildItemsFromMenus(mainSWR.cached, wantCore ? coreSWR.cached : null);
+      Draft.save(draft);
+      renderItems();
+    } else {
+      // Cache 不完整:顯示載入中
+      document.getElementById('items-container').innerHTML =
+        '<div class="banner">載入菜單中…</div>';
+    }
+
+    // 等 fresh 完成:只有在 cache 沒東西(draft.items 還空)時才用 fresh 建 items,
+    // 已有 draft.items 就不覆蓋(可能使用者已改動),fresh 只留在 cache 供下次。
+    const promises = [mainSWR.promise];
+    if (coreSWR) promises.push(coreSWR.promise);
+    Promise.all(promises).then((results) => {
+      if (draft.items.length > 0) return;
+      draft.items = buildItemsFromMenus(results[0], wantCore ? results[1] : null);
+      Draft.save(draft);
+      renderItems();
+    }).catch((e) => {
+      if (draft.items.length === 0) {
+        toast('讀取菜單失敗:' + e.message, 'error');
+        document.getElementById('items-container').innerHTML =
+          `<div class="banner banner-warn">無法載入菜單:${e.message}</div>`;
+      }
+    });
+  }
 
   document.getElementById('add-custom').onclick = onAddCustom;
   document.getElementById('discard-btn').onclick = onDiscard;
   document.getElementById('submit-btn').onclick = onSubmit;
-
-  // Rest timer wiring
-  RestTimer.init();
 
   // 30 秒 autosave 心跳
   setInterval(() => { if (draft) Draft.save(draft); }, 30000);
 
   // ============================================================
 
+  function buildItemsFromMenus(mainMenu, coreMenu) {
+    const items = [];
+    for (const m of mainMenu) items.push(menuItemToDraftItem(m));
+    if (coreMenu) for (const m of coreMenu) items.push(menuItemToDraftItem(m));
+    return items;
+  }
+
   function menuItemToDraftItem(m) {
     const sets = [];
     for (let i = 0; i < (m.sets || 3); i++) {
-      sets.push({ weight: '', reps: m.reps || '', rpe: '', note: '', done: false });
+      sets.push({ weight: '', reps: m.reps || '', rpe: '', rest_sec: '', note: '', done: false });
     }
     return {
       exercise_id: m.exercise_id,
@@ -217,6 +265,7 @@
         weight: last?.weight ?? '',
         reps: last?.reps ?? '',
         rpe: '',
+        rest_sec: '',
         note: '',
         done: false,
       });
@@ -277,16 +326,30 @@
     };
     row.appendChild(rIn);
 
-    // RPE
+    // RIR (資料欄位仍叫 rpe,不改 schema)
     const rpe = document.createElement('input');
     rpe.type = 'number';
     rpe.inputMode = 'decimal';
     rpe.step = '0.5';
-    rpe.min = '1'; rpe.max = '10';
-    rpe.placeholder = 'RPE';
+    rpe.min = '0'; rpe.max = '10';
+    rpe.placeholder = 'RIR';
     rpe.value = item.sets[si].rpe;
     rpe.oninput = () => { item.sets[si].rpe = rpe.value; Draft.save(draft); };
     row.appendChild(rpe);
+
+    // 休息秒(直接放在 row 內,和 kg/reps/RIR 同一列)
+    const restIn = document.createElement('input');
+    restIn.type = 'number';
+    restIn.inputMode = 'numeric';
+    restIn.className = 'set-rest';
+    restIn.placeholder = 'rest';
+    restIn.title = 'rest (seconds)';
+    restIn.value = item.sets[si].rest_sec || '';
+    restIn.oninput = () => {
+      item.sets[si].rest_sec = restIn.value;
+      Draft.save(draft);
+    };
+    row.appendChild(restIn);
 
     // Actions:[✓][📝][🗑]
     const acts = document.createElement('div');
@@ -303,10 +366,7 @@
       wrap.classList.toggle('done', !wasDone);
       check.textContent = !wasDone ? '✅' : '⭕';
       check.classList.toggle('done', !wasDone);
-      if (!wasDone) {
-        RestTimer.start(cfg.DEFAULT_REST_SEC);
-        focusNextSet(idx, si);
-      }
+      if (!wasDone) focusNextSet(idx, si);
     };
     acts.appendChild(check);
 
@@ -418,7 +478,7 @@
       exercise_name: name.trim(),
       category: 'custom',
       is_substitute: true,
-      sets: [{ weight: '', reps: '', rpe: '', note: '', done: false }],
+      sets: [{ weight: '', reps: '', rpe: '', rest_sec: '', note: '', done: false }],
     });
     Draft.save(draft);
     renderItems();
@@ -442,6 +502,7 @@
           weight: Number(s.weight) || 0,
           reps: Number(s.reps) || 0,
           rpe: s.rpe === '' ? null : Number(s.rpe),
+          rest_sec: s.rest_sec === '' || s.rest_sec == null ? null : Number(s.rest_sec),
           note: s.note || '',
           is_substitute: !!item.is_substitute,
         });
@@ -457,6 +518,10 @@
     btn.textContent = '送出中…';
     try {
       const res = await API.submitSession(payload);
+      // 送出後主動 bust 會受影響的 cache,下一頁進去就是最新
+      Cache.bust('recent:100');
+      Cache.bust('recent:20');
+      Cache.bust('today_plan');
       Draft.clear();
       toast(`已送出 (${res.set_count} 組)`, 'success');
       setTimeout(() => location.href = 'history.html', 800);
@@ -474,92 +539,4 @@
     setTimeout(() => t.className = 'toast', 2500);
   }
 
-  // ============================================================
-  //  RestTimer 模組
-  // ============================================================
-  const RestTimer = (function () {
-    let remaining = 0;
-    let intervalId = null;
-    let el, display, label;
-
-    function init() {
-      el = document.getElementById('rest-timer');
-      display = document.getElementById('timer-display');
-      label = document.getElementById('timer-label');
-      el.querySelectorAll('[data-adjust]').forEach(b => {
-        b.onclick = () => adjust(Number(b.dataset.adjust));
-      });
-      el.querySelector('[data-action="skip"]').onclick = stop;
-    }
-
-    function start(sec) {
-      remaining = sec;
-      render();
-      show();
-      if (intervalId) clearInterval(intervalId);
-      intervalId = setInterval(tick, 1000);
-    }
-
-    function tick() {
-      remaining--;
-      if (remaining <= 0) {
-        remaining = 0;
-        render();
-        finish();
-      } else {
-        render();
-      }
-    }
-
-    function adjust(delta) {
-      if (remaining <= 0) start(Math.max(0, delta));
-      else { remaining = Math.max(0, remaining + delta); render(); }
-    }
-
-    function stop() {
-      if (intervalId) clearInterval(intervalId);
-      intervalId = null;
-      hide();
-    }
-
-    function finish() {
-      if (intervalId) clearInterval(intervalId);
-      intervalId = null;
-      el.classList.add('finished');
-      label.textContent = '休息結束!';
-      vibrate();
-      beep();
-      setTimeout(() => { hide(); el.classList.remove('finished'); }, 3000);
-    }
-
-    function render() {
-      const m = Math.floor(remaining / 60);
-      const s = remaining % 60;
-      display.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-      label.textContent = '組間休息';
-    }
-
-    function show() { el.classList.remove('hidden'); el.classList.remove('finished'); }
-    function hide() { el.classList.add('hidden'); }
-
-    function vibrate() {
-      if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
-    }
-
-    function beep() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = 880;
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + 0.6);
-      } catch { /* silent */ }
-    }
-
-    return { init, start };
-  })();
 })();

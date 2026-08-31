@@ -1,16 +1,23 @@
 (async function () {
   const list = document.getElementById('list');
-  try {
-    const sessions = await API.getRecentSessions(20);
+
+  function renderList(sessions) {
     if (!sessions.length) {
       list.innerHTML = '<p class="dim">還沒有任何訓練紀錄。</p>';
       return;
     }
     list.innerHTML = '';
     sessions.forEach(s => list.appendChild(sessionCard(s)));
-  } catch (e) {
-    list.innerHTML = `<p class="text-danger">讀取失敗:${e.message}</p>`;
   }
+
+  const { cached, promise } = Cache.swr('recent:20', () => API.getRecentSessions(20));
+  if (cached) renderList(cached);
+  promise.then((fresh) => {
+    if (JSON.stringify(fresh) === JSON.stringify(cached)) return;
+    renderList(fresh);
+  }).catch((e) => {
+    if (!cached) list.innerHTML = `<p class="text-danger">讀取失敗:${e.message}</p>`;
+  });
 
   function sessionCard(s) {
     const card = document.createElement('div');
@@ -46,7 +53,7 @@
       gDiv.style.borderTop = '1px solid var(--border)';
       gDiv.innerHTML = `<div style="font-weight:600">${g.name}</div>` +
         g.rows.map(r =>
-          `<div class="dim">組 ${r.set_num}: ${r.weight}kg × ${r.reps}${r.rpe ? ' · RPE ' + r.rpe : ''}</div>`
+          `<div class="dim">組 ${r.set_num}: ${r.weight}kg × ${r.reps}${r.rpe ? ' · RIR ' + r.rpe : ''}${r.rest_sec ? ' · 休 ' + r.rest_sec + 's' : ''}</div>`
         ).join('');
       detail.appendChild(gDiv);
     }

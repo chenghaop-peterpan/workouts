@@ -284,6 +284,7 @@ function submitSession_(body) {
         weight: s.weight != null ? s.weight : 0,
         reps: s.reps != null ? s.reps : 0,
         rpe: s.rpe == null ? '' : s.rpe,
+        rest_sec: s.rest_sec == null ? '' : s.rest_sec,
         note: s.note || '',
         is_substitute: !!s.is_substitute,
       });

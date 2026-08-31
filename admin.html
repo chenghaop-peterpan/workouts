@@ -35,11 +35,18 @@
       <p class="dim" id="draft-info">—</p>
       <button class="btn btn-danger btn-sm" id="clear-draft">清除草稿</button>
     </div>
+
+    <div class="card">
+      <h2>快取</h2>
+      <p class="dim">動作字典、菜單、歷史紀錄會暫存在瀏覽器加速載入。改完 Google Sheet 想立刻看到最新資料時按這裡。</p>
+      <button class="btn btn-sm" id="clear-cache">重新同步</button>
+    </div>
   </main>
 
   <div id="toast" class="toast"></div>
 
   <script src="js/config.js"></script>
+  <script src="js/cache.js"></script>
   <script src="js/draft.js"></script>
   <script>
     (function () {
@@ -65,6 +72,14 @@
           Draft.clear();
           location.reload();
         }
+      };
+
+      document.getElementById('clear-cache').onclick = () => {
+        Cache.bustAll();
+        const t = document.getElementById('toast');
+        t.textContent = '已清除快取,回首頁重新載入即可看到最新資料';
+        t.className = 'toast show success';
+        setTimeout(() => t.className = 'toast', 2500);
       };
     })();
   </script>

@@ -42,18 +42,6 @@
     <div class="spacer"></div>
   </main>
 
-  <div id="rest-timer" class="rest-timer hidden">
-    <div class="timer-body">
-      <div class="timer-display" id="timer-display">00:00</div>
-      <div class="timer-label" id="timer-label">組間休息</div>
-    </div>
-    <div class="timer-actions">
-      <button class="btn btn-sm" data-adjust="-15">-15s</button>
-      <button class="btn btn-sm" data-adjust="15">+15s</button>
-      <button class="btn btn-sm btn-ghost" data-action="skip">跳過</button>
-    </div>
-  </div>
-
   <div class="bottom-bar container">
     <button class="btn btn-ghost" id="discard-btn">丟棄</button>
     <button class="btn btn-primary" id="submit-btn">完成訓練 → 送出</button>
@@ -62,6 +50,7 @@
   <div id="toast" class="toast"></div>
 
   <script src="js/config.js"></script>
+  <script src="js/cache.js"></script>
   <script src="js/mock-data.js"></script>
   <script src="js/plan.js"></script>
   <script src="js/api.js"></script>

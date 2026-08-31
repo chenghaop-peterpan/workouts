@@ -15,21 +15,30 @@
     };
   }
 
-  // 2. Today's suggestion
-  let plan;
-  try {
-    plan = await API.getTodayPlan();
-  } catch (e) {
-    plan = { type: 'push_legs', includes_core: true, reason: '無法讀取建議,顯示預設' };
+  // 2. Today's suggestion (SWR)
+  let plan = { type: 'push_legs', includes_core: true, reason: '載入建議中…' };
+
+  function renderSuggestion() {
+    const label = typeLabel(plan.type) + (plan.includes_core ? ' (加核心)' : '');
+    document.getElementById('suggestion').innerHTML =
+      `今日建議:<strong>${label}</strong><div class="dim">${plan.reason}</div>`;
+    document.querySelectorAll('.day-btn').forEach(btn => {
+      btn.classList.toggle('recommended', btn.dataset.type === plan.type);
+    });
   }
 
-  const label = typeLabel(plan.type) + (plan.includes_core ? ' (加核心)' : '');
-  document.getElementById('suggestion').innerHTML =
-    `今日建議:<strong>${label}</strong><div class="dim">${plan.reason}</div>`;
-
-  // Highlight recommended button(s)
-  document.querySelectorAll('.day-btn').forEach(btn => {
-    if (btn.dataset.type === plan.type) btn.classList.add('recommended');
+  const { cached, promise } = Cache.swr('today_plan', () => API.getTodayPlan());
+  if (cached) plan = cached;
+  renderSuggestion();
+  promise.then((fresh) => {
+    if (JSON.stringify(fresh) === JSON.stringify(plan)) return;
+    plan = fresh;
+    renderSuggestion();
+  }).catch(() => {
+    if (!cached) {
+      plan = { type: 'push_legs', includes_core: true, reason: '無法讀取建議,顯示預設' };
+      renderSuggestion();
+    }
   });
 
   // 3. Day-type click → create draft + go to session
