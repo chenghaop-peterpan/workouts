@@ -44,6 +44,9 @@ function handle_(method, e) {
       case 'submitSession':       return jsonOut_(submitSession_(body));
       case 'updateTemplate':      return jsonOut_(updateTemplate_(body));
       case 'resetTemplate':       return jsonOut_(resetTemplate_(body));
+      case 'createExercise':      return jsonOut_(createExercise_(body));
+      case 'updateExercise':      return jsonOut_(updateExercise_(body));
+      case 'deleteExercise':      return jsonOut_(deleteExercise_(body));
       default: return err_('unknown action: ' + action);
     }
   } catch (ex) {
@@ -98,6 +101,39 @@ function appendRow_(name, obj) {
   const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   const row = headers.map(function (h) { return obj[h] !== undefined ? obj[h] : ''; });
   sh.appendRow(row);
+}
+
+/** 找到 keyCol === keyVal 的那一列,只覆寫 obj 裡有給的欄位(其餘保留原值)。找不到就丟錯。 */
+function updateRowByKey_(name, keyCol, keyVal, obj) {
+  const sh = getSheet_(name);
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const keyIdx = headers.indexOf(keyCol);
+  const data = sh.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][keyIdx] === keyVal) {
+      const row = headers.map(function (h, j) {
+        return obj[h] !== undefined ? obj[h] : data[i][j];
+      });
+      sh.getRange(i + 1, 1, 1, headers.length).setValues([row]);
+      return;
+    }
+  }
+  throw new Error('row not found: ' + keyVal);
+}
+
+/** 刪除 keyCol === keyVal 的那一列。找不到就丟錯。 */
+function deleteRowByKey_(name, keyCol, keyVal) {
+  const sh = getSheet_(name);
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const keyIdx = headers.indexOf(keyCol);
+  const data = sh.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][keyIdx] === keyVal) {
+      sh.deleteRow(i + 1);
+      return;
+    }
+  }
+  throw new Error('row not found: ' + keyVal);
 }
 
 // ============================================================
@@ -364,6 +400,80 @@ function resetTemplate_(body) {
   try {
     writeTemplateRows_(category, items);
     return { category: category, count: items.length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ============================================================
+// Write actions:動作庫(Exercises 表)
+// ============================================================
+
+/** 某個 exercise_id 目前被哪些 category(推/拉/腿/核心)的菜單用到。 */
+function countTemplateUsage_(exerciseId) {
+  const rows = readTable_('Templates').filter(function (t) { return t.exercise_id === exerciseId; });
+  const cats = {};
+  rows.forEach(function (t) { cats[t.template_type] = true; });
+  return Object.keys(cats);
+}
+
+function createExercise_(body) {
+  const ex = body.exercise;
+  if (!ex || !ex.exercise_id || !ex.name || !ex.category) throw new Error('missing required fields');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    appendRow_('Exercises', {
+      exercise_id: ex.exercise_id,
+      name: ex.name,
+      category: ex.category,
+      default_sets: ex.default_sets || 3,
+      default_reps: ex.default_reps || 10,
+      target: ex.target || '',
+      coach_tip: ex.coach_tip || '',
+      hint_url: ex.hint_url || '',
+      notes: ex.notes || '',
+    });
+    return { exercise_id: ex.exercise_id };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function updateExercise_(body) {
+  const ex = body.exercise;
+  if (!ex || !ex.exercise_id) throw new Error('missing exercise_id');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    updateRowByKey_('Exercises', 'exercise_id', ex.exercise_id, {
+      name: ex.name,
+      category: ex.category,
+      default_sets: ex.default_sets,
+      default_reps: ex.default_reps,
+      target: ex.target || '',
+      coach_tip: ex.coach_tip || '',
+      hint_url: ex.hint_url || '',
+      notes: ex.notes || '',
+    });
+    return { exercise_id: ex.exercise_id };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function deleteExercise_(body) {
+  const id = body.exercise_id;
+  if (!id) throw new Error('missing exercise_id');
+  const usedIn = countTemplateUsage_(id);
+  if (usedIn.length > 0) {
+    throw new Error('此動作正被 ' + usedIn.length + ' 個菜單使用中(' + usedIn.map(typeLabel_).join('、') + '),請先從菜單管理移除後再刪除');
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    deleteRowByKey_('Exercises', 'exercise_id', id);
+    return { exercise_id: id };
   } finally {
     lock.releaseLock();
   }

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>動作管理 · 健身記錄</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top-nav">
+    <h1>動作管理</h1>
+    <nav>
+      <a href="index.html">今日</a>
+      <a href="history.html">歷史</a>
+      <a href="menu.html">菜單</a>
+      <a href="exercises.html">動作</a>
+      <a href="admin.html">設定</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <h2 id="ex-form-title">新增動作</h2>
+      <label>名稱</label>
+      <input type="text" id="ex-name" placeholder="如「啞鈴側平舉」">
+
+      <label>部位</label>
+      <select id="ex-category">
+        <option value="push">推</option>
+        <option value="pull">拉</option>
+        <option value="legs">腿</option>
+        <option value="core">核心</option>
+      </select>
+
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1">
+          <label>預設組數</label>
+          <input type="number" id="ex-sets" value="3" min="1">
+        </div>
+        <div style="flex:1">
+          <label>預設次數</label>
+          <input type="number" id="ex-reps" value="10" min="1">
+        </div>
+      </div>
+
+      <label>Target 強度提示(選填)</label>
+      <input type="text" id="ex-target" placeholder="如「22.5 kg × 6-8」">
+
+      <label>教練提醒(選填)</label>
+      <input type="text" id="ex-coach-tip" placeholder="動作要領、注意事項">
+
+      <label>示範影片連結(選填)</label>
+      <input type="text" id="ex-hint-url" placeholder="https://...">
+
+      <div class="spacer"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="ex-cancel">取消</button>
+        <button class="btn btn-primary btn-block" id="ex-save">新增動作</button>
+      </div>
+    </div>
+
+    <div id="exercise-groups">載入中…</div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/cache.js"></script>
+  <script src="js/mock-data.js"></script>
+  <script src="js/plan.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/exercise-store.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app-exercises.js"></script>
+</body>
+</html>

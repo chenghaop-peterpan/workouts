@@ -11,7 +11,36 @@
   // ---------- MOCK 實作 ----------
   const mock = {
     async getExercises() {
-      return structuredClone(MOCK_DATA.exercises);
+      const override = window.ExerciseStore ? ExerciseStore.get() : null;
+      return structuredClone(override || MOCK_DATA.exercises);
+    },
+    async createExercise(exercise) {
+      const list = await this.getExercises();
+      list.push({ default_sets: 3, default_reps: 10, target: '', coach_tip: '', hint_url: '', notes: '', ...exercise });
+      ExerciseStore.set(list);
+      return { exercise_id: exercise.exercise_id };
+    },
+    async updateExercise(exercise) {
+      const list = await this.getExercises();
+      const idx = list.findIndex(e => e.exercise_id === exercise.exercise_id);
+      if (idx === -1) throw new Error('exercise not found: ' + exercise.exercise_id);
+      list[idx] = { ...list[idx], ...exercise };
+      ExerciseStore.set(list);
+      return { exercise_id: exercise.exercise_id };
+    },
+    async deleteExercise(exerciseId) {
+      const usedIn = [];
+      for (const cat of ['push', 'pull', 'legs', 'core']) {
+        const menu = await this.getMenu(cat);
+        if (menu.some(m => m.exercise_id === exerciseId)) usedIn.push(cat);
+      }
+      if (usedIn.length > 0) {
+        const labels = usedIn.map(c => CATEGORY_LABELS[c] || c).join('、');
+        throw new Error(`此動作正被 ${usedIn.length} 個菜單使用中(${labels}),請先從菜單管理移除後再刪除`);
+      }
+      const list = (await this.getExercises()).filter(e => e.exercise_id !== exerciseId);
+      ExerciseStore.set(list);
+      return { exercise_id: exerciseId };
     },
     async getMenu(type) {
       // push_legs/pull_legs 是舊按鈕用的組合,動態組出來,不再各自維護一份重複的腿清單
@@ -20,7 +49,8 @@
 
       const override = window.TemplateStore ? TemplateStore.get(type) : null;
       const tmpl = override || MOCK_DATA.templates[type] || [];
-      const byId = Object.fromEntries(MOCK_DATA.exercises.map(e => [e.exercise_id, e]));
+      const exercises = await this.getExercises();
+      const byId = Object.fromEntries(exercises.map(e => [e.exercise_id, e]));
       return tmpl.map((t, i) => {
         const ex = byId[t.exercise_id] || {};
         return {
@@ -96,6 +126,9 @@
     submitSession(payload)         { return this._post('submitSession', payload); },
     updateTemplate(category, items) { return this._post('updateTemplate', { category, items }); },
     resetTemplate(category)         { return this._post('resetTemplate', { category }); },
+    createExercise(exercise)        { return this._post('createExercise', { exercise }); },
+    updateExercise(exercise)        { return this._post('updateExercise', { exercise }); },
+    deleteExercise(exerciseId)      { return this._post('deleteExercise', { exercise_id: exerciseId }); },
   };
 
   window.API = cfg.USE_MOCK ? mock : real;
