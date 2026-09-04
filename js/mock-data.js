@@ -117,31 +117,30 @@ window.MOCK_DATA = {
   ],
 
   templates: {
-    push_legs: [
+    // 純 category 模板(供「更多選項」自由勾選使用)
+    push: [
       { exercise_id: 'shoulder_warmup',          sets: 2, reps: 15 },
-      { exercise_id: 'flat_db_press',            sets: 3, reps: 8  },
-      { exercise_id: 'incline_db_press',         sets: 3, reps: 8  },
-      { exercise_id: 'seated_db_shoulder_press', sets: 3, reps: 8  },
-      { exercise_id: 'db_lateral_raise',         sets: 3, reps: 15 },
-      { exercise_id: 'pec_fly',                  sets: 3, reps: 10 },
-      { exercise_id: 'barbell_rdl',              sets: 3, reps: 10 },
-      { exercise_id: 'leg_press',                sets: 3, reps: 10 },
-      { exercise_id: 'goblet_squat',             sets: 3, reps: 10 },
-      { exercise_id: 'leg_extension',            sets: 3, reps: 12 },
-      { exercise_id: 'leg_curl',                 sets: 3, reps: 12 },
+      { exercise_id: 'flat_db_press',             sets: 3, reps: 8  },
+      { exercise_id: 'incline_db_press',          sets: 3, reps: 8  },
+      { exercise_id: 'seated_db_shoulder_press',  sets: 3, reps: 8  },
+      { exercise_id: 'db_lateral_raise',          sets: 3, reps: 15 },
+      { exercise_id: 'pec_fly',                   sets: 3, reps: 10 },
     ],
-    pull_legs: [
-      { exercise_id: 'hoist_low_row',            sets: 3, reps: 8  },
-      { exercise_id: 'lat_pulldown',             sets: 3, reps: 8  },
-      { exercise_id: 'cable_face_pull',          sets: 3, reps: 12 },
-      { exercise_id: 'db_alt_curl',              sets: 3, reps: 10 },
-      { exercise_id: 'db_hammer_curl',           sets: 3, reps: 10 },
-      { exercise_id: 'barbell_rdl',              sets: 3, reps: 10 },
-      { exercise_id: 'leg_press',                sets: 3, reps: 10 },
-      { exercise_id: 'goblet_squat',             sets: 3, reps: 10 },
-      { exercise_id: 'leg_extension',            sets: 3, reps: 12 },
-      { exercise_id: 'leg_curl',                 sets: 3, reps: 12 },
+    pull: [
+      { exercise_id: 'hoist_low_row',    sets: 3, reps: 8  },
+      { exercise_id: 'lat_pulldown',     sets: 3, reps: 8  },
+      { exercise_id: 'cable_face_pull',  sets: 3, reps: 12 },
+      { exercise_id: 'db_alt_curl',      sets: 3, reps: 10 },
+      { exercise_id: 'db_hammer_curl',   sets: 3, reps: 10 },
     ],
+    legs: [
+      { exercise_id: 'barbell_rdl',    sets: 3, reps: 10 },
+      { exercise_id: 'leg_press',      sets: 3, reps: 10 },
+      { exercise_id: 'goblet_squat',   sets: 3, reps: 10 },
+      { exercise_id: 'leg_extension',  sets: 3, reps: 12 },
+      { exercise_id: 'leg_curl',       sets: 3, reps: 12 },
+    ],
+
     core: [
       { exercise_id: 'cocoon_curl',    sets: 3, reps: 12 },
       { exercise_id: 'russian_twist',  sets: 3, reps: 20 },

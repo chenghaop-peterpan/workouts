@@ -27,7 +27,9 @@ const Draft = {
   },
 
   // 新建一份空草稿
-  create({ type, includes_core }) {
+  // categories(選填):自由勾選部位時的 category 陣列,如 ['push','legs','core']。
+  // 3 顆快速按鈕不傳,session.html 會從 type 逗號切開相容。
+  create({ type, includes_core, categories }) {
     return {
       started_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -35,6 +37,7 @@ const Draft = {
         date: new Date().toISOString().slice(0, 10),
         type,
         includes_core: !!includes_core,
+        categories: categories || null,
         body_weight: null,
         notes: '',
       },

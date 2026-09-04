@@ -12,6 +12,7 @@
     <nav>
       <a href="index.html">今日</a>
       <a href="history.html">歷史</a>
+      <a href="menu.html">菜單</a>
       <a href="admin.html">設定</a>
     </nav>
   </header>
@@ -45,9 +46,41 @@
       </button>
     </div>
 
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn btn-block btn-ghost" id="more-options-btn">⚙ 更多選項(自由勾選部位)</button>
+    </div>
+
     <div class="spacer"></div>
     <p class="dim">選擇後會進入該日菜單。可自由 override 今日建議。</p>
   </main>
+
+  <div id="more-options-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <h3 style="margin-bottom:4px;">今天要練哪些部位?</h3>
+      <p class="dim" style="margin-top:0;">可自由組合,至少選一項</p>
+      <label class="checkbox-row">
+        <input type="checkbox" id="opt-push" value="push">
+        <span>推 <span class="dim">(胸/肩/三頭)</span></span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="opt-pull" value="pull">
+        <span>拉 <span class="dim">(背/二頭)</span></span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="opt-legs" value="legs">
+        <span>腿</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="opt-core" value="core">
+        <span>核心</span>
+      </label>
+      <div class="spacer"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="more-options-cancel">取消</button>
+        <button class="btn btn-primary btn-block" id="more-options-start">開始今日菜單</button>
+      </div>
+    </div>
+  </div>
 
   <div id="toast" class="toast"></div>
 
@@ -55,6 +88,7 @@
   <script src="js/cache.js"></script>
   <script src="js/mock-data.js"></script>
   <script src="js/plan.js"></script>
+  <script src="js/templates.js"></script>
   <script src="js/api.js"></script>
   <script src="js/draft.js"></script>
   <script src="js/app-index.js"></script>

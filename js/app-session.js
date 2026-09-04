@@ -87,14 +87,14 @@
     // 已有 draft.items:立刻 render(即使 byId/prMap 還空,fresh 到會 re-render)
     renderItems();
   } else {
-    const type = draft.session.type;
-    const wantCore = draft.session.includes_core && type !== 'core';
-    const mainSWR = Cache.swr('menu:' + type, () => API.getMenu(type));
-    const coreSWR = wantCore ? Cache.swr('menu:core', () => API.getMenu('core')) : null;
+    // categories:自由勾選部位時直接存在 session 上;3 顆舊按鈕沒有 categories,
+    // 從 legacy type 相容推導(push_legs → ['push','legs'] 等,逗號分隔 type 直接切開)。
+    const categories = draft.session.categories || legacyTypeToCategories(draft.session.type);
+    const menuSWRs = categories.map(cat => Cache.swr('menu:' + cat, () => API.getMenu(cat)));
 
-    if (mainSWR.cached && (!wantCore || coreSWR.cached)) {
+    if (menuSWRs.every(swr => swr.cached)) {
       // Cache 齊全:立刻用 cache 建 draft.items
-      draft.items = buildItemsFromMenus(mainSWR.cached, wantCore ? coreSWR.cached : null);
+      draft.items = buildItemsFromMenus(menuSWRs.map(swr => swr.cached));
       Draft.save(draft);
       renderItems();
     } else {
@@ -105,11 +105,9 @@
 
     // 等 fresh 完成:只有在 cache 沒東西(draft.items 還空)時才用 fresh 建 items,
     // 已有 draft.items 就不覆蓋(可能使用者已改動),fresh 只留在 cache 供下次。
-    const promises = [mainSWR.promise];
-    if (coreSWR) promises.push(coreSWR.promise);
-    Promise.all(promises).then((results) => {
+    Promise.all(menuSWRs.map(swr => swr.promise)).then((results) => {
       if (draft.items.length > 0) return;
-      draft.items = buildItemsFromMenus(results[0], wantCore ? results[1] : null);
+      draft.items = buildItemsFromMenus(results);
       Draft.save(draft);
       renderItems();
     }).catch((e) => {
@@ -130,10 +128,17 @@
 
   // ============================================================
 
-  function buildItemsFromMenus(mainMenu, coreMenu) {
+  // legacy 3 按鈕的固定 type → category 陣列,供沒有 draft.session.categories 的舊草稿相容
+  function legacyTypeToCategories(type) {
+    if (type === 'push_legs') return ['push_legs'];
+    if (type === 'pull_legs') return ['pull_legs'];
+    if (type === 'core') return ['core'];
+    return type.split(',');
+  }
+
+  function buildItemsFromMenus(menus) {
     const items = [];
-    for (const m of mainMenu) items.push(menuItemToDraftItem(m));
-    if (coreMenu) for (const m of coreMenu) items.push(menuItemToDraftItem(m));
+    for (const menu of menus) for (const m of menu) items.push(menuItemToDraftItem(m));
     return items;
   }
 

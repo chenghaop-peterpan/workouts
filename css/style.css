@@ -132,6 +132,57 @@ h3 { font-size: 16px; color: var(--text-dim); }
 }
 .day-btn .sub { font-size: 13px; color: var(--text-dim); font-weight: 400; }
 
+/* --- More-options modal (index) --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+}
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 16px;
+  cursor: pointer;
+}
+.checkbox-row:last-of-type { border-bottom: none; }
+.checkbox-row input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* --- Menu management (menu.html) --- */
+.menu-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.menu-item-row:last-of-type { border-bottom: none; }
+.menu-add-select {
+  max-width: none;
+  flex: 1;
+}
+
 /* --- Suggestion banner --- */
 .banner {
   padding: 12px 14px;

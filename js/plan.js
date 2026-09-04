@@ -39,14 +39,23 @@ function daysBetween(dateStr, today) {
   return Math.round((d2 - d1) / 86400000);
 }
 
+const LEGACY_TYPE_LABELS = {
+  push_legs: '推 + 腿',
+  pull_legs: '拉 + 腿',
+  core: '核心',
+  push: '推 (legacy)',
+  pull: '拉 (legacy)',
+};
+
+const CATEGORY_LABELS = { push: '推', pull: '拉', legs: '腿', core: '核心' };
+
 function typeLabel(t) {
-  return {
-    push_legs: '推 + 腿',
-    pull_legs: '拉 + 腿',
-    core: '核心',
-    push: '推 (legacy)',
-    pull: '拉 (legacy)',
-  }[t] || t;
+  if (LEGACY_TYPE_LABELS[t]) return LEGACY_TYPE_LABELS[t];
+  // 複合 type(自由勾選部位產生),逗號分隔的 category 清單,如 "push,legs,core"
+  if (t && t.includes(',')) {
+    return t.split(',').map(c => CATEGORY_LABELS[c] || c).join(' + ');
+  }
+  return t;
 }
 
 window.typeLabel = typeLabel;

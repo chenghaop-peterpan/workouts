@@ -14,7 +14,12 @@
       return structuredClone(MOCK_DATA.exercises);
     },
     async getMenu(type) {
-      const tmpl = MOCK_DATA.templates[type] || [];
+      // push_legs/pull_legs 是舊按鈕用的組合,動態組出來,不再各自維護一份重複的腿清單
+      if (type === 'push_legs') return [...(await this.getMenu('push')), ...(await this.getMenu('legs'))];
+      if (type === 'pull_legs') return [...(await this.getMenu('pull')), ...(await this.getMenu('legs'))];
+
+      const override = window.TemplateStore ? TemplateStore.get(type) : null;
+      const tmpl = override || MOCK_DATA.templates[type] || [];
       const byId = Object.fromEntries(MOCK_DATA.exercises.map(e => [e.exercise_id, e]));
       return tmpl.map((t, i) => {
         const ex = byId[t.exercise_id] || {};
