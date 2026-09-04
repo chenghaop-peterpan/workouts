@@ -94,6 +94,8 @@
     getLastForExercise(exerciseId) { return this._get('getLastForExercise', { exercise_id: exerciseId }); },
     getRecentSessions(limit = 10)  { return this._get('getRecentSessions', { limit }); },
     submitSession(payload)         { return this._post('submitSession', payload); },
+    updateTemplate(category, items) { return this._post('updateTemplate', { category, items }); },
+    resetTemplate(category)         { return this._post('resetTemplate', { category }); },
   };
 
   window.API = cfg.USE_MOCK ? mock : real;

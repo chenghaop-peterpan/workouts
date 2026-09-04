@@ -7,11 +7,13 @@
 
   const state = {}; // cat -> 目前編輯中的清單(尚未存檔),陣列元素 {exercise_id, sets, reps}
 
-  function loadCategory(cat) {
-    const override = TemplateStore.get(cat);
-    state[cat] = structuredClone(override || MOCK_DATA.templates[cat] || []);
+  // 一律透過 API.getMenu() 取得目前有效清單(mock 模式會自動套用 TemplateStore override,
+  // real 模式直接反映 Google Sheet 目前的 Templates 內容),不再直接讀 MOCK_DATA.templates。
+  async function loadCategory(cat) {
+    const menu = await API.getMenu(cat);
+    state[cat] = menu.map(m => ({ exercise_id: m.exercise_id, sets: m.sets, reps: m.reps }));
   }
-  CATS.forEach(loadCategory);
+  await Promise.all(CATS.map(loadCategory));
 
   function bustMenuCache(cat) {
     Cache.bust('menu:' + cat);
@@ -106,23 +108,44 @@
     const saveBtn = document.createElement('button');
     saveBtn.className = 'btn btn-primary';
     saveBtn.textContent = '儲存為預設';
-    saveBtn.onclick = () => {
-      TemplateStore.set(cat, state[cat]);
-      bustMenuCache(cat);
-      toast(`已儲存「${CATEGORY_LABELS[cat]}」的預設清單`, 'success');
+    saveBtn.onclick = async () => {
+      saveBtn.disabled = true;
+      try {
+        if (window.APP_CONFIG.USE_MOCK) {
+          TemplateStore.set(cat, state[cat]);
+        } else {
+          await API.updateTemplate(cat, state[cat]);
+        }
+        bustMenuCache(cat);
+        toast(`已儲存「${CATEGORY_LABELS[cat]}」的預設清單`, 'success');
+      } catch (e) {
+        toast('儲存失敗:' + e.message, 'error');
+      } finally {
+        saveBtn.disabled = false;
+      }
     };
     actions.appendChild(saveBtn);
 
     const resetBtn = document.createElement('button');
     resetBtn.className = 'btn btn-ghost';
     resetBtn.textContent = '還原預設';
-    resetBtn.onclick = () => {
+    resetBtn.onclick = async () => {
       if (!confirm(`確定把「${CATEGORY_LABELS[cat]}」還原成出廠預設清單?`)) return;
-      TemplateStore.reset(cat);
-      bustMenuCache(cat);
-      loadCategory(cat);
-      render();
-      toast(`已還原「${CATEGORY_LABELS[cat]}」`, 'success');
+      resetBtn.disabled = true;
+      try {
+        if (window.APP_CONFIG.USE_MOCK) {
+          TemplateStore.reset(cat);
+        } else {
+          await API.resetTemplate(cat);
+        }
+        bustMenuCache(cat);
+        await loadCategory(cat);
+        render();
+        toast(`已還原「${CATEGORY_LABELS[cat]}」`, 'success');
+      } catch (e) {
+        toast('還原失敗:' + e.message, 'error');
+        resetBtn.disabled = false;
+      }
     };
     actions.appendChild(resetBtn);
 

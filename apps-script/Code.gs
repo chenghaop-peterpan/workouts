@@ -42,6 +42,8 @@ function handle_(method, e) {
       case 'getLastForExercise':  return jsonOut_(getLastForExercise_(e.parameter.exercise_id));
       case 'getRecentSessions':   return jsonOut_(getRecentSessions_(Number(e.parameter.limit) || 10));
       case 'submitSession':       return jsonOut_(submitSession_(body));
+      case 'updateTemplate':      return jsonOut_(updateTemplate_(body));
+      case 'resetTemplate':       return jsonOut_(resetTemplate_(body));
       default: return err_('unknown action: ' + action);
     }
   } catch (ex) {
@@ -127,6 +129,10 @@ function getExercises_() {
 
 function getMenu_(type) {
   if (!type) throw new Error('missing type');
+  // push_legs/pull_legs 是舊按鈕用的組合,動態組出來,不再各自維護一份重複的腿清單
+  if (type === 'push_legs') return getMenu_('push').concat(getMenu_('legs'));
+  if (type === 'pull_legs') return getMenu_('pull').concat(getMenu_('legs'));
+
   const tmpl = readTable_('Templates')
     .filter(function (t) { return String(t.template_type) === String(type); })
     .sort(function (a, b) { return (Number(a.position) || 0) - (Number(b.position) || 0); });
@@ -149,6 +155,16 @@ function getMenu_(type) {
   });
 }
 
+/** 把 type 字串拆成 category 陣列。認舊值(push_legs/pull_legs/push/pull/core)跟新的逗號複合字串。 */
+function parseCategories_(type) {
+  if (!type) return [];
+  if (type === 'push_legs') return ['push', 'legs'];
+  if (type === 'pull_legs') return ['pull', 'legs'];
+  const s = String(type);
+  if (s.indexOf(',') !== -1) return s.split(',');
+  return [s];
+}
+
 function getTodayPlan_() {
   const sessions = readTable_('Sessions').filter(function (s) { return s.date; });
   const intervalDays = Number(getConfig_('core_interval_days')) || 3;
@@ -158,16 +174,27 @@ function getTodayPlan_() {
     return Object.assign({}, s, { dateStr: formatDate_(s.date) });
   }).sort(function (a, b) { return a.dateStr < b.dateStr ? 1 : -1; });
 
-  let type = 'push_legs';
-  const lastMain = sorted.find(function (s) {
-    return s.type && (String(s.type).indexOf('push') === 0 || String(s.type).indexOf('pull') === 0);
-  });
-  if (lastMain) type = String(lastMain.type).indexOf('push') === 0 ? 'pull_legs' : 'push_legs';
+  // 分別找最近一次含 push / 含 pull 的日期,推薦較久沒練(或從沒練過)的那個
+  let lastPush = null, lastPull = null;
+  let lastMain = null;
+  for (let i = 0; i < sorted.length; i++) {
+    const cats = parseCategories_(sorted[i].type);
+    if (!lastPush && cats.indexOf('push') !== -1) { lastPush = sorted[i]; }
+    if (!lastPull && cats.indexOf('pull') !== -1) { lastPull = sorted[i]; }
+    if (!lastMain && (cats.indexOf('push') !== -1 || cats.indexOf('pull') !== -1)) { lastMain = sorted[i]; }
+    if (lastPush && lastPull) break;
+  }
+  let mainCategory;
+  if (!lastPush) mainCategory = 'push';
+  else if (!lastPull) mainCategory = 'pull';
+  else mainCategory = (lastPush.dateStr <= lastPull.dateStr) ? 'push' : 'pull';
+  const type = mainCategory + '_legs';
 
   let includes_core = true;
   let coreReason = '尚無核心紀錄,建議今天做';
   const lastCore = sorted.find(function (s) {
-    return s.includes_core === true || String(s.includes_core).toUpperCase() === 'TRUE' || s.type === 'core';
+    return s.includes_core === true || String(s.includes_core).toUpperCase() === 'TRUE' ||
+      parseCategories_(s.type).indexOf('core') !== -1;
   });
   if (lastCore) {
     const days = daysBetween_(lastCore.dateStr, today);
@@ -189,14 +216,20 @@ function getTodayPlan_() {
 }
 
 function typeLabel_(t) {
-  const map = {
+  const legacy = {
     push_legs: '推 + 腿',
     pull_legs: '拉 + 腿',
     core: '核心',
     push: '推 (legacy)',
     pull: '拉 (legacy)',
   };
-  return map[t] || t;
+  if (legacy[t]) return legacy[t];
+  const s = String(t || '');
+  if (s.indexOf(',') !== -1) {
+    const labels = { push: '推', pull: '拉', legs: '腿', core: '核心' };
+    return s.split(',').map(function (c) { return labels[c] || c; }).join(' + ');
+  }
+  return t;
 }
 
 function getLastForExercise_(exerciseId) {
@@ -293,6 +326,72 @@ function submitSession_(body) {
     return { session_id: sid, set_count: body.sets.length };
   } finally {
     lock.releaseLock();
+  }
+}
+
+// ============================================================
+// Write actions:菜單管理(Templates 表)
+// ============================================================
+const TEMPLATE_CATEGORIES = ['push', 'pull', 'legs', 'core'];
+
+function updateTemplate_(body) {
+  const category = body.category;
+  const items = body.items;
+  if (TEMPLATE_CATEGORIES.indexOf(category) === -1) throw new Error('invalid category: ' + category);
+  if (!Array.isArray(items)) throw new Error('items must be array');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    writeTemplateRows_(category, items);
+    return { category: category, count: items.length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function resetTemplate_(body) {
+  const category = body.category;
+  if (TEMPLATE_CATEGORIES.indexOf(category) === -1) throw new Error('invalid category: ' + category);
+
+  const items = TEMPLATES
+    .filter(function (t) { return t.template_type === category; })
+    .sort(function (a, b) { return (Number(a.position) || 0) - (Number(b.position) || 0); })
+    .map(function (t) { return { exercise_id: t.exercise_id, sets: t.sets, reps: t.reps }; });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    writeTemplateRows_(category, items);
+    return { category: category, count: items.length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** 把 Templates 表裡某個 category 的舊列整批換成新列(不動表頭/其他 category 的列)。 */
+function writeTemplateRows_(category, items) {
+  const sh = getSheet_('Templates');
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const typeIdx = headers.indexOf('template_type');
+  const data = sh.getDataRange().getValues();
+  const kept = data.slice(1).filter(function (row) { return row[typeIdx] !== category; });
+  const newRows = items.map(function (it, i) {
+    return headers.map(function (h) {
+      if (h === 'template_type') return category;
+      if (h === 'position') return i;
+      if (h === 'exercise_id') return it.exercise_id;
+      if (h === 'sets') return it.sets;
+      if (h === 'reps') return it.reps;
+      return '';
+    });
+  });
+  const allRows = kept.concat(newRows);
+  if (sh.getLastRow() > 1) {
+    sh.getRange(2, 1, sh.getLastRow() - 1, headers.length).clearContent();
+  }
+  if (allRows.length) {
+    sh.getRange(2, 1, allRows.length, headers.length).setValues(allRows);
   }
 }
 

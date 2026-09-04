@@ -143,32 +143,28 @@ const EXERCISES = [
 ];
 
 // ============================================================
-// SEED: Templates (26 rows, flattened)
+// SEED: Templates (21 rows, flattened,純 4 個 category)
 // ============================================================
 const TEMPLATES = [
-  // push_legs (11)
-  { template_type: 'push_legs', position: 0,  exercise_id: 'shoulder_warmup',          sets: 2, reps: 15 },
-  { template_type: 'push_legs', position: 1,  exercise_id: 'flat_db_press',            sets: 3, reps: 8  },
-  { template_type: 'push_legs', position: 2,  exercise_id: 'incline_db_press',         sets: 3, reps: 8  },
-  { template_type: 'push_legs', position: 3,  exercise_id: 'seated_db_shoulder_press', sets: 3, reps: 8  },
-  { template_type: 'push_legs', position: 4,  exercise_id: 'db_lateral_raise',         sets: 3, reps: 15 },
-  { template_type: 'push_legs', position: 5,  exercise_id: 'pec_fly',                  sets: 3, reps: 10 },
-  { template_type: 'push_legs', position: 6,  exercise_id: 'barbell_rdl',              sets: 3, reps: 10 },
-  { template_type: 'push_legs', position: 7,  exercise_id: 'leg_press',                sets: 3, reps: 10 },
-  { template_type: 'push_legs', position: 8,  exercise_id: 'goblet_squat',             sets: 3, reps: 10 },
-  { template_type: 'push_legs', position: 9,  exercise_id: 'leg_extension',            sets: 3, reps: 12 },
-  { template_type: 'push_legs', position: 10, exercise_id: 'leg_curl',                 sets: 3, reps: 12 },
-  // pull_legs (10)
-  { template_type: 'pull_legs', position: 0, exercise_id: 'hoist_low_row',    sets: 3, reps: 8  },
-  { template_type: 'pull_legs', position: 1, exercise_id: 'lat_pulldown',     sets: 3, reps: 8  },
-  { template_type: 'pull_legs', position: 2, exercise_id: 'cable_face_pull',  sets: 3, reps: 12 },
-  { template_type: 'pull_legs', position: 3, exercise_id: 'db_alt_curl',      sets: 3, reps: 10 },
-  { template_type: 'pull_legs', position: 4, exercise_id: 'db_hammer_curl',   sets: 3, reps: 10 },
-  { template_type: 'pull_legs', position: 5, exercise_id: 'barbell_rdl',      sets: 3, reps: 10 },
-  { template_type: 'pull_legs', position: 6, exercise_id: 'leg_press',        sets: 3, reps: 10 },
-  { template_type: 'pull_legs', position: 7, exercise_id: 'goblet_squat',     sets: 3, reps: 10 },
-  { template_type: 'pull_legs', position: 8, exercise_id: 'leg_extension',    sets: 3, reps: 12 },
-  { template_type: 'pull_legs', position: 9, exercise_id: 'leg_curl',         sets: 3, reps: 12 },
+  // push (6)
+  { template_type: 'push', position: 0, exercise_id: 'shoulder_warmup',          sets: 2, reps: 15 },
+  { template_type: 'push', position: 1, exercise_id: 'flat_db_press',            sets: 3, reps: 8  },
+  { template_type: 'push', position: 2, exercise_id: 'incline_db_press',         sets: 3, reps: 8  },
+  { template_type: 'push', position: 3, exercise_id: 'seated_db_shoulder_press', sets: 3, reps: 8  },
+  { template_type: 'push', position: 4, exercise_id: 'db_lateral_raise',         sets: 3, reps: 15 },
+  { template_type: 'push', position: 5, exercise_id: 'pec_fly',                  sets: 3, reps: 10 },
+  // pull (5)
+  { template_type: 'pull', position: 0, exercise_id: 'hoist_low_row',    sets: 3, reps: 8  },
+  { template_type: 'pull', position: 1, exercise_id: 'lat_pulldown',     sets: 3, reps: 8  },
+  { template_type: 'pull', position: 2, exercise_id: 'cable_face_pull',  sets: 3, reps: 12 },
+  { template_type: 'pull', position: 3, exercise_id: 'db_alt_curl',      sets: 3, reps: 10 },
+  { template_type: 'pull', position: 4, exercise_id: 'db_hammer_curl',   sets: 3, reps: 10 },
+  // legs (5)
+  { template_type: 'legs', position: 0, exercise_id: 'barbell_rdl',    sets: 3, reps: 10 },
+  { template_type: 'legs', position: 1, exercise_id: 'leg_press',      sets: 3, reps: 10 },
+  { template_type: 'legs', position: 2, exercise_id: 'goblet_squat',   sets: 3, reps: 10 },
+  { template_type: 'legs', position: 3, exercise_id: 'leg_extension',  sets: 3, reps: 12 },
+  { template_type: 'legs', position: 4, exercise_id: 'leg_curl',       sets: 3, reps: 12 },
   // core (5)
   { template_type: 'core', position: 0, exercise_id: 'cocoon_curl',     sets: 3, reps: 12 },
   { template_type: 'core', position: 1, exercise_id: 'russian_twist',   sets: 3, reps: 20 },
